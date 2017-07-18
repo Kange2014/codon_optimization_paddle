@@ -321,6 +321,13 @@ If the run succeeds, the output log is saved in path of demo/sentiment/train.log
 * CurrentEval: classification_error_evaluator: current classfication error of the lates log_period batches.
 * Pass=0: Going through all training set one time is called one pass. 0 means going through training set first time.
 
+To visulize the training and testing curves:
+
+    python -m paddle.utils.plotcurve -i error > plot.png
+
+The script plotcurve.py requires the python module of matplotlib, so if it fails, maybe you need to install matplotlib.
+After training finishes, the training and testing error curves will be saved to plot.png using plotcurve.py script. An example of the plot is shown as Fig1.
+
 ### Testing
 
 Testing means evaluating the labeled validation set using the trained model.
