@@ -50,6 +50,77 @@ dict.txt  labels.list  test.list  test_part_000  train.list  train_part_000
 * dict.txt: dictionary generated on train sets by default.
 * labels.txt: neg 0, pos 1, means label 0 is negative review, label 1 is positive review.
 
+### Transer data to model
+
+Define a daa provider by using PyDataProvider2 to provide training or testing data to PaddlePaddle.
+
+    from paddle.trainer.PyDataProvider2 import *
+
+
+    def hook(settings, dictionary1,dictionary2, dictionary3, **kwargs):
+      settings.base_dict = dictionary1
+      settings.word_dict = dictionary2
+      settings.aa_dict = dictionary3
+      settings.input_types = {
+       "base": integer_value_sequence(len(settings.base_dict)), 
+       "word": integer_value_sequence(len(settings.word_dict)),
+        "aa": integer_value_sequence(len(settings.aa_dict)),
+       "label": integer_value(6)
+       #dense_vector(1) # linear
+    }
+      settings.logger.info('base dict len : %d' % (len(settings.base_dict)))
+      settings.logger.info('word dict len : %d' % (len(settings.word_dict)))
+      settings.logger.info('aa dict len : %d' % (len(settings.aa_dict)))
+
+    codontable = {
+    'ATA':'I', 'ATC':'I', 'ATT':'I', 'ATG':'M',
+    'ACA':'T', 'ACC':'T', 'ACG':'T', 'ACT':'T',
+    'AAC':'N', 'AAT':'N', 'AAA':'K', 'AAG':'K',
+    'AGC':'S', 'AGT':'S', 'AGA':'R', 'AGG':'R',
+    'CTA':'L', 'CTC':'L', 'CTG':'L', 'CTT':'L',
+    'CCA':'P', 'CCC':'P', 'CCG':'P', 'CCT':'P',
+    'CAC':'H', 'CAT':'H', 'CAA':'Q', 'CAG':'Q',
+    'CGA':'R', 'CGC':'R', 'CGG':'R', 'CGT':'R',
+    'GTA':'V', 'GTC':'V', 'GTG':'V', 'GTT':'V',
+    'GCA':'A', 'GCC':'A', 'GCG':'A', 'GCT':'A',
+    'GAC':'D', 'GAT':'D', 'GAA':'E', 'GAG':'E',
+    'GGA':'G', 'GGC':'G', 'GGG':'G', 'GGT':'G',
+    'TCA':'S', 'TCC':'S', 'TCG':'S', 'TCT':'S',
+    'TTC':'F', 'TTT':'F', 'TTA':'L', 'TTG':'L',
+    'TAC':'Y', 'TAT':'Y', 'TAA':'X', 'TAG':'X',
+    'TGC':'C', 'TGT':'C', 'TGA':'X', 'TGG':'W',
+    }
+
+    @provider(init_hook=hook)
+    def process(settings, file_name):
+      with open(file_name, 'r') as fdata:
+        for line_count, line in enumerate(fdata):
+            label, comment = line.strip().split('\t\t')
+            label = int(label)
+            #label = float(label)
+            
+            num_base = len(comment)
+            num_codon = len(comment)/3
+            bases = [comment.lower()[i] for i in range(num_base)]
+            words = [comment.lower()[i*3:(i*3+3)] for i in range(num_codon)]
+            #words = comment.split()
+            base_slot = [
+                settings.base_dict[w] for w in bases if w in settings.base_dict
+            ]
+            word_slot = [
+                settings.word_dict[w] for w in words if w in settings.word_dict
+            ]
+            aa_slot = [
+                settings.aa_dict[codontable[w.upper()]] for w in words if codontable[w.upper()] in settings.aa_dict
+            ]            
+            if not base_slot:
+                continue
+            if not word_slot:
+                continue
+            if not aa_slot:
+                continue
+            yield {"base":base_slot, "word":word_slot, "aa": aa_slot,"label":label}
+
 ### Training
 
 Define the newly designed network architecture in sentiment_net.py
@@ -228,16 +299,16 @@ train.sh:
 
 If the run succeeds, the output log is saved in path of demo/sentiment/train.log and model is saved in path of model_output/. The output log is explained as follows.
 
-I0526 10:38:13.902485 95450 TrainerInternal.cpp:165]  Batch=10 samples=1280 AvgCost=1.72904 CurrentCost=1.72904 Eval: classification_error_evaluator=0.728906  CurrentEval: classification_error_evaluator=0.728906 
+> I0526 10:38:13.902485 95450 TrainerInternal.cpp:165]  Batch=10 samples=1280 AvgCost=1.72904 CurrentCost=1.72904 Eval: classification_error_evaluator=0.728906  CurrentEval: classification_error_evaluator=0.728906 
 
-I0526 10:38:44.678020 95450 TrainerInternal.cpp:165]  Batch=20 samples=2560 AvgCost=1.69531 CurrentCost=1.66159 Eval: classification_error_evaluator=0.725391  CurrentEval: classification_error_evaluator=0.721875 
+> I0526 10:38:44.678020 95450 TrainerInternal.cpp:165]  Batch=20 samples=2560 AvgCost=1.69531 CurrentCost=1.66159 Eval: classification_error_evaluator=0.725391  CurrentEval: classification_error_evaluator=0.721875 
 
-I0526 10:39:15.359201 95450 TrainerInternal.cpp:165]  Batch=30 samples=3840 AvgCost=1.66931 CurrentCost=1.61731 Eval: classification_error_evaluator=0.723958  CurrentEval: classification_error_evaluator=0.721094 
+> I0526 10:39:15.359201 95450 TrainerInternal.cpp:165]  Batch=30 samples=3840 AvgCost=1.66931 CurrentCost=1.61731 Eval: classification_error_evaluator=0.723958  CurrentEval: classification_error_evaluator=0.721094 
 
-I0526 10:39:44.219265 95450 TrainerInternal.cpp:165]  Batch=40 samples=5078 AvgCost=1.65918 CurrentCost=1.62776 Eval: classification_error_evaluator=0.725876  CurrentEval: classification_error_evaluator=0.731826 
-I0526 10:39:44.219666 95450 TrainerInternal.cpp:181]  Pass=0 Batch=40 samples=5078 AvgCost=1.65918 Eval: classification_error_evaluator=0.725876 
-I0526 10:40:04.531482 95450 Tester.cpp:115]  Test samples=1270 cost=1.62236 Eval: classification_error_evaluator=0.7 
-I0526 10:40:04.538769 95450 GradientMachine.cpp:63] Saving parameters to ./model_output/pass-00000
+> I0526 10:39:44.219265 95450 TrainerInternal.cpp:165]  Batch=40 samples=5078 AvgCost=1.65918 CurrentCost=1.62776 Eval: classification_error_evaluator=0.725876  CurrentEval: classification_error_evaluator=0.731826 
+> I0526 10:39:44.219666 95450 TrainerInternal.cpp:181]  Pass=0 Batch=40 samples=5078 AvgCost=1.65918 Eval: > classification_error_evaluator=0.725876 
+> I0526 10:40:04.531482 95450 Tester.cpp:115]  Test samples=1270 cost=1.62236 Eval: classification_error_evaluator=0.7 
+> I0526 10:40:04.538769 95450 GradientMachine.cpp:63] Saving parameters to ./model_output/pass-00000
 
 
 * Batch=xx: means passing xx batches.
