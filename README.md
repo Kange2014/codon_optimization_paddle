@@ -323,7 +323,7 @@ If the run succeeds, the output log is saved in path of demo/sentiment/train.log
 
 To visulize the training and testing curves:
 
-    python -m paddle.utils.plotcurve -i error > plot.png
+    python -m paddle.utils.plotcurve -i train.log > plot.png
 
 The script plotcurve.py requires the python module of matplotlib, so if it fails, maybe you need to install matplotlib.
 After training finishes, the training and testing error curves will be saved to plot.png using plotcurve.py script. An example of the plot is shown as Fig1.
