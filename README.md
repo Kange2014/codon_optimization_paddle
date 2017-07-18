@@ -38,17 +38,19 @@ preprocess.sh:
     data_dir="./data/nature_pe_comp"
     python preprocess.py -i $data_dir -m True -t False
 
-data_dir: input data directory
-preprocess.py: proprocess script
+* data_dir: input data directory
+* preprocess.py: proprocess script
 
 If running successfully, you will see data/pre-nature_pe in direactory as follows:
 
-dict.txt  labels.list  test.list  test_part_000  train.list  train_part_000
+> dict.txt  labels.list  test.list  test_part_000  train.list  train_part_000
 
 * test_part_000 and train_part_000: all labeled test and train sets. Train sets have been shuffled.
 * train.list and test.list: train and test file lists.
 * dict.txt: dictionary generated on train sets by default.
 * labels.txt: neg 0, pos 1, means label 0 is negative review, label 1 is positive review.
+
+Note: in our case, we need to change the train_part_001 to test_part_000 as testing data set. We thus need further generate a file test.list to indicate the location of test_part_000 file.
 
 ### Transer data to model
 
